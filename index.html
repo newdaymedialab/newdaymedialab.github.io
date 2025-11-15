@@ -29,8 +29,8 @@ a{color:inherit;text-decoration:none}
 .upload-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px dashed rgba(255,255,255,0.06);padding:12px;border-radius:10px;color:var(--muted);cursor:pointer}
 .small{font-size:13px;color:var(--muted)}
 .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
+canvas{width:100%;border-radius:10px;margin-top:10px;background:#000}
 select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef6;font-weight:600;margin-top:6px}
-video{width:100%;border-radius:10px;margin-top:10px;background:#000}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
 </style>
 </head>
@@ -93,7 +93,7 @@ video{width:100%;border-radius:10px;margin-top:10px;background:#000}
 </div>
 
 <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
-<video id="previewVideo" style="display:none" controls></video>
+<canvas id="previewCanvas" style="display:none;height:220px"></canvas>
 </div>
 </aside>
 </section>
@@ -111,54 +111,69 @@ const btnPreview=document.getElementById('btnPreview');
 const heroUpload=document.getElementById('heroUpload');
 const btnUploadTop=document.getElementById('btnUploadTop');
 const demoThumb=document.querySelector('.demo-thumb');
-const previewVideo=document.getElementById('previewVideo');
+const previewCanvas=document.getElementById('previewCanvas');
+const ctx=previewCanvas.getContext('2d');
 const charSelect=document.getElementById('charSelect');
 const filterSelect=document.getElementById('filterSelect');
 
 [heroUpload,btnUploadTop].forEach(btn=>btn.addEventListener('click',()=>fileInput.click()));
 
+let videoEl=document.createElement('video'); videoEl.crossOrigin='anonymous';
 fileInput.addEventListener('change',()=>{
   const file=fileInput.files[0];
   if(!file){uploadStatus.textContent="No file selected."; return;}
-  if(!['video/mp4','video/quicktime'].includes(file.type)){uploadStatus.textContent="Unsupported file type!"; fileInput.value=''; return;}
+  if(!['video/mp4','video/quicktime'].includes(file.type)){uploadStatus.textContent="Unsupported type!"; fileInput.value=''; return;}
   if(file.size>50*1024*1024){uploadStatus.textContent="File too large!"; fileInput.value=''; return;}
-  const tmpVideo=document.createElement('video');
-  tmpVideo.preload='metadata';
-  tmpVideo.src=URL.createObjectURL(file);
-  tmpVideo.onloadedmetadata=()=>{
-    if(tmpVideo.duration<5 || tmpVideo.duration>59){uploadStatus.textContent="Video must be 5–59s!"; fileInput.value=''; return;}
-    uploadStatus.textContent=`File ready: ${file.name} (${Math.round(tmpVideo.duration)}s)`;
-    demoThumb.textContent="Ready for preview or generation";
+  videoEl.src=URL.createObjectURL(file);
+  videoEl.load();
+  videoEl.onloadedmetadata=()=>{
+    if(videoEl.duration<5 || videoEl.duration>59){uploadStatus.textContent="Video must be 5–59s!"; fileInput.value=''; return;}
+    uploadStatus.textContent=`File ready: ${file.name} (${Math.round(videoEl.duration)}s)`;
+    demoThumb.style.display='none';
+    previewCanvas.style.display='block';
   };
 });
 
-// Simple CSS preview with transform and filter
+// Canvas Preview
+function applyFilter(v,x,y,w,h,filter){
+  ctx.drawImage(v,0,0,ctx.canvas.width,ctx.canvas.height);
+  const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
+  const data=img.data;
+  for(let i=0;i<data.length;i+=4){
+    let r=data[i],g=data[i+1],b=data[i+2];
+    if(filter==='warm'){ r=r*1.05; g=g*1.02; b=b*0.98; }
+    if(filter==='blue'){ r=r*0.95; g=g; b=b*1.08; }
+    if(filter==='contrast'){ r=128+(r-128)*1.3; g=128+(g-128)*1.3; b=128+(b-128)*1.3; }
+    if(filter==='noir'){ let avg=(r+g+b)/3; r=g=b=avg*1.15; }
+    data[i]=Math.min(255,r); data[i+1]=Math.min(255,g); data[i+2]=Math.min(255,b);
+  }
+  ctx.putImageData(img,0,0);
+}
+
+function drawLoop(){ 
+  if(videoEl.paused || videoEl.ended) return;
+  let pov=charSelect.value;
+  let filter=filterSelect.value;
+  let sx=0, sy=0, sw=videoEl.videoWidth, sh=videoEl.videoHeight;
+  if(pov==='left'){ sx=0; sw*=0.6; } 
+  if(pov==='right'){ sx=videoEl.videoWidth*0.4; sw*=0.6; } 
+  if(pov==='center'){ sw*=0.6; sh*=0.6; } 
+  if(pov==='stabilize'){ sw*=0.7; sh*=0.7; }
+  ctx.drawImage(videoEl,sx,sy,sw,sh,0,0,previewCanvas.width,previewCanvas.height);
+  applyFilter(videoEl,0,0,sw,sh,filter);
+  requestAnimationFrame(drawLoop);
+}
+
 btnPreview.addEventListener('click',()=>{
-  const file=fileInput.files[0];
-  if(!file){alert("Select a file first"); return;}
-  const pov=charSelect.value;
-  const filter=filterSelect.value;
-  previewVideo.src=URL.createObjectURL(file);
-  previewVideo.style.display='block';
-  demoThumb.style.display='none';
-  previewVideo.style.transition='transform 0.8s ease, filter 0.6s ease';
-  // POV simulation
-  if(pov==='left') previewVideo.style.transform='scale(1.1) translateX(-8%)';
-  if(pov==='right') previewVideo.style.transform='scale(1.1) translateX(8%)';
-  if(pov==='center') previewVideo.style.transform='scale(1.05)';
-  if(pov==='stabilize') previewVideo.style.transform='scale(1.03)';
-  // Color filters
-  if(filter==='warm') previewVideo.style.filter='sepia(0.08) saturate(1.05)';
-  if(filter==='blue') previewVideo.style.filter='hue-rotate(200deg) saturate(1.05)';
-  if(filter==='contrast') previewVideo.style.filter='contrast(1.1)';
-  if(filter==='noir') previewVideo.style.filter='grayscale(1) contrast(1.15)';
-  uploadStatus.textContent="Preview ready!";
+  if(!videoEl.src){alert("Select a video first"); return;}
+  videoEl.play();
+  drawLoop();
+  uploadStatus.textContent="Previewing on canvas...";
 });
 
-// POV Generation with ffmpeg.js
+// POV Generation
 let ffmpegLoaded=false;
 async function ensureFFmpeg(){if(ffmpegLoaded) return; uploadStatus.textContent='Loading FFmpeg...'; await ffmpeg.load(); ffmpegLoaded=true; uploadStatus.textContent='FFmpeg loaded';}
-
 function buildFilter(pov,filter){
   let vf='';
   if(pov==='center') vf='crop=in_w*0.6:in_h*0.6,scale=640:360';
