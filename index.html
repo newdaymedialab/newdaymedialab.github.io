@@ -267,5 +267,46 @@
 
   </script>
 
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.2/dist/ffmpeg.min.js"></script>
+  <script>
+    const uploadBtn = document.getElementById('uploadButton');
+    const statusEl = document.getElementById('status');
+
+    uploadBtn.addEventListener('click', async () => {
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'video/*';
+      fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        statusEl.innerText = '⏳ Processing video... (this happens locally on your device)';
+
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        await ffmpeg.load();
+
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+        // Simple POV-like effect: crop center + slight zoom
+        await ffmpeg.run(
+          '-i', 'input.mp4',
+          '-vf', 'crop=in_w*0.6:in_h*0.6,scale=1280:720',
+          'output.mp4'
+        );
+
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'newday_pov_demo.mp4';
+        a.click();
+
+        statusEl.innerText = '✅ POV video hazır!';
+      };
+      fileInput.click();
+    });
+  </script>
 </body>
 </html>
