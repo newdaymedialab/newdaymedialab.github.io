@@ -7,434 +7,124 @@
   <meta name="description" content="NewDay Media Lab: AI-driven POV video generation from any character. Short demo (5-59s), community-backed, crypto-friendly."/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#0b0f14; --panel:#0f1519; --accent:#f8b400; --muted:#9aa6b2; --glass: rgba(255,255,255,0.03);
-    }
+    :root{ --bg:#0b0f14; --panel:#0f1519; --accent:#f8b400; --muted:#9aa6b2; }
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;color:#e6eef6;background:linear-gradient(180deg,var(--bg),#071014);-webkit-font-smoothing:antialiased}
     a{color:inherit}
-
-    /* NAVBAR */
     .nav{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:linear-gradient(180deg, rgba(11,15,20,0.8), rgba(11,15,20,0.65));backdrop-filter: blur(6px);border-bottom:1px solid rgba(255,255,255,0.03)}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#ffca3c);box-shadow:0 6px 18px rgba(248,180,0,0.12)}
-    .logo svg{width:26px;height:26px}
     .brand h3{margin:0;font-size:15px;color:#fff;letter-spacing:0.2px}
     .brand p{margin:0;font-size:11px;color:var(--muted)}
     .menu{display:flex;gap:18px;align-items:center}
     .menu a{color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;padding:8px;border-radius:8px}
     .menu a:hover{color:#fff;background:rgba(255,255,255,0.02)}
     .cta{background:var(--accent);color:#071014;padding:8px 12px;border-radius:8px;font-weight:700;text-decoration:none}
-
-    /* HERO */
     .hero{max-width:1200px;margin:36px auto 18px;padding:28px 22px;display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
     .hero-left h1{font-size:34px;margin:0 0 8px;color:#fff;line-height:1.03}
     .hero-left p{margin:0 0 18px;color:var(--muted);font-size:15px}
     .features{display:flex;gap:12px;flex-wrap:wrap}
     .chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px}
-
     .hero-right{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
     .uploader{display:flex;flex-direction:column;gap:10px}
     .uploader input[type=file]{display:none}
     .upload-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px dashed rgba(255,255,255,0.06);padding:12px;border-radius:10px;color:var(--muted);cursor:pointer}
     .small{font-size:13px;color:var(--muted)}
     .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
-
-    /* SECTIONS */
     .container{max-width:1100px;margin:26px auto;padding:0 20px}
     section.card{background:var(--panel);border-radius:12px;padding:20px;margin-bottom:18px;border:1px solid rgba(255,255,255,0.03)}
     h2{color:var(--accent);margin:0 0 12px}
     .muted{color:var(--muted)}
-
-    /* Roadmap timeline */
     .timeline{display:flex;flex-direction:column;gap:12px}
     .step{display:flex;gap:12px;align-items:flex-start}
     .bullet{width:12px;height:12px;border-radius:99px;background:linear-gradient(135deg,var(--accent),#ffca3c);margin-top:6px}
     .step .title{font-weight:700;color:#fff}
-
-    /* Support grid */
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
     .card-small{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
     .address{font-family:monospace;background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;color:#dff0ff;font-size:13px}
-
-    /* Footer */
     footer{padding:28px 20px;color:var(--muted);text-align:center;font-size:13px}
-
-    /* Responsive */
-    @media (max-width:980px){
-      .hero{grid-template-columns:1fr;padding:18px}
-      .menu{display:none}
-    }
-
-  </style>
-</head>
-<body>
-
-  <nav class="nav">
-    <div class="brand">
-      <div class="logo" aria-hidden>
-        <!-- small stylized sun / camera icon -->
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="white" opacity="0.12"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="#071014" fill-opacity="0.9"/><path d="M8 6l2.2 2" stroke="#071014" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/></svg>
-      </div>
-      <div>
-        <h3>NewDay Media Lab</h3>
-        <p class="muted">Where AI creates vision</p>
-      </div>
-    </div>
-
-    <div class="menu" role="navigation" aria-label="Main menu">
-      <a href="#home">Home</a>
-      <a href="#project">Project</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="#support">Support</a>
-      <a href="#contact">Contact</a>
-    </div>
-
-    <div style="display:flex;gap:10px;align-items:center">
-      <a class="cta" id="btnUploadTop">Upload</a>
-      <a href="#support" class="muted" style="font-size:13px">Support</a>
-    </div>
-  </nav>
-
-  <main>
-    <section id="home" class="hero">
-      <div class="hero-left">
-        <h1>See the world through their eyes.</h1>
-        <p class="muted">NewDay Media Lab converts short clips (5–59s) into immersive, character-first point-of-view videos — using advanced AI reconstruction techniques. No bodycams. No sensors. Just AI.</p>
-        <div class="features" style="margin-top:14px">
-          <span class="chip">Short clips • 5–59s</span>
-          <span class="chip">Fast prototype</span>
-          <span class="chip">Crypto-friendly</span>
-          <span class="chip">Multi-platform</span>
-        </div>
-
-        <div style="margin-top:18px;display:flex;gap:12px">
-          <a class="cta" id="heroUpload">Try Demo</a>
-          <a class="chip" href="#roadmap">See Roadmap</a>
-        </div>
-      </div>
-
-      <aside class="hero-right">
-        <div class="uploader">
-          <div class="demo-thumb">Demo preview (coming soon)</div>
-          <label class="upload-btn" for="fileInput">Choose a file (5–59s)
-            <input type="file" id="fileInput" accept="video/*">
-          </label>
-          <div class="small">Supported: MP4, MOV. Max 50MB (prototype)</div>
-          <div style="display:flex;gap:10px;margin-top:8px">
-            <button class="chip" id="btnGenerate">Generate POV</button>
-            <button class="chip" id="btnPreview">Preview AI</button>
-          </div>
-          <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
-        </div>
-      </aside>
-    </section>
-
-    <div class="container">
-      <section id="project" class="card">
-        <h2>Project</h2>
-        <p class="muted">NewDay Media Lab is building a platform for creators and storytellers: upload a short clip, pick a character, and receive a new video reconstructed from that character's point of view. We focus on short, high-quality outputs first to optimize cost and user experience.</p>
-
-        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
-          <div class="card-small" style="flex:1;min-width:220px">
-            <strong>How it works</strong>
-            <p class="muted" style="margin:8px 0 0;font-size:13px">Character detection → scene reconstruction → POV synthesis → post-processing</p>
-          </div>
-          <div class="card-small" style="flex:1;min-width:220px">
-            <strong>First release</strong>
-            <p class="muted" style="margin:8px 0 0;font-size:13px">Prototype for 5–59s videos with quick turnaround for demos and beta users.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="roadmap" class="card">
-        <h2>Roadmap</h2>
-        <div class="timeline">
-          <div class="step"><div class="bullet"></div><div><div class="title">Phase 1 — MVP</div><div class="muted">GitHub Pages demo, basic upload UI, short-video outputs (0–3 months)</div></div></div>
-          <div class="step"><div class="bullet"></div><div><div class="title">Phase 2 — Beta</div><div class="muted">Integrate AI pipeline, automated processing queue, closed beta (3–6 months)</div></div></div>
-          <div class="step"><div class="bullet"></div><div><div class="title">Phase 3 — Fund & Scale</div><div class="muted">Community funding, token launch, cloud GPU scaling (6–12 months)</div></div></div>
-          <div class="step"><div class="bullet"></div><div><div class="title">Phase 4 — Pro</div><div class="muted">Full commercial API, longer videos, B2B partnerships (12+ months)</div></div></div>
-        </div>
-      </section>
-
-      <section id="support" class="card">
-        <h2>Support</h2>
-        <p class="muted">Help NewDay Media Lab move from prototype to production. Below are planned support channels — we'll publish live wallet addresses and NFT/backer options during the beta.</p>
-
-        <div class="grid" style="margin-top:12px">
-          <div class="card-small">
-            <strong>Crypto (planned)</strong>
-            <p class="muted" style="margin:8px 0 6px;font-size:13px">Preferred: TON, ETH (stablecoins like USDT/USDC supported)</p>
-            <div class="address">TON: <span id="tonAddr">TBD</span></div>
-          </div>
-          <div class="card-small">
-            <strong>Early Backers NFT</strong>
-            <p class="muted" style="margin:8px 0 6px;font-size:13px">Limited NFT passes for beta access & credits</p>
-            <div class="address">Collection: coming soon</div>
-          </div>
-          <div class="card-small">
-            <strong>Corporate Sponsorship</strong>
-            <p class="muted" style="margin:8px 0 6px;font-size:13px">We welcome partnerships in media & sports</p>
-            <div class="address">partnerships@newdaymedialab.com</div>
-          </div>
-        </div>
-
-      </section>
-
-      <section id="contact" class="card">
-        <h2>Contact</h2>
-        <p class="muted">Want to collaborate, test the beta, or support the project? Reach out.</p>
-        <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:260px">
-            <form id="contactForm">
-              <label style="display:block;font-weight:600;margin-bottom:6px">Email</label>
-              <input type="email" id="cEmail" placeholder="you@example.com" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef6" required>
-              <label style="display:block;font-weight:600;margin:12px 0 6px">Message</label>
-              <textarea id="cMsg" rows="4" placeholder="Tell us about your interest..." style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef6"></textarea>
-              <div style="margin-top:10px"><button type="submit" class="cta">Send</button></div>
-            </form>
-          </div>
-
-          <div style="flex:1;min-width:260px">
-            <div class="card-small">
-              <strong>Quick contacts</strong>
-              <p class="muted" style="margin:8px 0 0"><b>Email:</b> contact@newdaymedialab.com</p>
-              <p class="muted" style="margin:6px 0 0"><b>Twitter:</b> @NewDayMediaLab</p>
-              <p class="muted" style="margin:6px 0 0"><b>Telegram:</b> t.me/NewDayMediaLab</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </div>
-  </main>
-
-  <footer>
-    © 2025 NewDay Media Lab • Built for creators & builders • <span class="muted">Prototype</span>
-  </footer>
-
-  <script>
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(a=>{
-      a.addEventListener('click',e=>{
-        e.preventDefault();
-        const id=a.getAttribute('href').slice(1);
-        const el=document.getElementById(id);
-        if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-      })
-    })
-
-    // File selection preview and fake upload
-    const fileInput=document.getElementById('fileInput');
-    const uploadStatus=document.getElementById('uploadStatus');
-    const btnGenerate=document.getElementById('btnGenerate');
-    const heroUpload=document.getElementById('heroUpload');
-    const btnUploadTop=document.getElementById('btnUploadTop');
-
-    function setFileLabel(){
-      if(fileInput.files.length===0){uploadStatus.textContent='No file selected.';return}
-      const f=fileInput.files[0];
-      uploadStatus.textContent=`Selected: ${f.name} (${Math.round(f.size/1024)} KB)`;
-    }
-    fileInput.addEventListener('change',setFileLabel);
-
-    // fake flows
-    function fakeProcess(){
-      if(!fileInput.files.length){alert('Please choose a file first (prototype).');return}
-      const file=fileInput.files[0];
-      const duration=Math.min(60,Math.max(5, Math.round(file.size/1024000)+5));
-      uploadStatus.textContent='Processing... This is a prototype demo (no real AI in this preview).';
-      btnGenerate.textContent='Processing...'; btnGenerate.disabled=true;
-      setTimeout(()=>{
-        btnGenerate.textContent='Generate POV'; btnGenerate.disabled=false;
-        uploadStatus.textContent='Done — demo returned. (In production this would be the generated video link.)';
-        alert('Demo complete — in the real system you will receive a downloadable POV video link.');
-      },2000+Math.min(4000,duration*200));
-    }
-    btnGenerate.addEventListener('click',fakeProcess);
-    heroUpload.addEventListener('click',()=>document.getElementById('fileInput').click());
-    btnUploadTop.addEventListener('click',()=>document.getElementById('fileInput').click());
-
-    // Contact form (fake submit)
-    document.getElementById('contactForm').addEventListener('submit',e=>{
-      e.preventDefault();
-      const email=document.getElementById('cEmail').value.trim();
-      const msg=document.getElementById('cMsg').value.trim();
-      if(!email){alert('Please enter email');return}
-      alert('Thanks! Your message has been recorded (prototype). We will contact you at: '+email);
-      document.getElementById('cEmail').value='';document.getElementById('cMsg').value='';
-    });
-
-  </script>
-
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.2/dist/ffmpeg.min.js"></script>
-  <style>
-    /* small spinner */
-    .spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
     .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .select, .btn-small{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);font-weight:600}
     .btn-small:hover{background:rgba(255,255,255,0.02);color:#fff}
     .devbox{margin-top:12px;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;font-family:monospace;font-size:13px;color:#bfefff}
+    .spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media (max-width:600px){
+      .hero-left h1{font-size:28px}
+      .hero-left p{font-size:14px}
+      .chip{font-size:12px}
+      .cta{padding:10px 16px;font-size:14px}
+      .nav{padding:10px 14px}
+      .brand h3{font-size:14px}
+      .menu{display:none}
+      .hero-right{padding:14px}
+      .upload-btn{padding:14px;text-align:center;justify-content:center}
+      .uploader video{max-height:220px}
+      section.card{padding:16px}
+      h2{font-size:20px}
+    }
   </style>
+</head>
+<body>
+  <nav class="nav"> ... </nav>
+  <main> ... </main>
+  <footer>© 2025 NewDay Media Lab • Built for creators & builders • <span class="muted">Prototype</span></footer>
 
   <script>
-    (function(){
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: false });
-      const fileInput = document.getElementById('fileInput');
-      const btnGenerate = document.getElementById('btnGenerate');
-      const btnPreview = document.getElementById('btnPreview');
-      const uploadStatus = document.getElementById('uploadStatus');
-      const demoThumb = document.querySelector('.demo-thumb');
-      const heroUpload = document.getElementById('heroUpload');
-      const btnUploadTop = document.getElementById('btnUploadTop');
+    // Smooth scroll and upload UI wiring
 
-      // create new UI controls
-      const controlRow = document.createElement('div'); controlRow.className='controls';
-      controlRow.innerHTML = `
-        <select id="charSelect" class="select" title="Character / POV">
-          <option value="center">Character A — Center POV</option>
-          <option value="left">Character B — Left POV</option>
-          <option value="right">Character C — Right POV</option>
-          <option value="stabilize">Character D — Stabilized POV</option>
-        </select>
-        <select id="filterSelect" class="select" title="Color Filter">
-          <option value="none">No filter</option>
-          <option value="warm">Cinematic Warm</option>
-          <option value="blue">Sci-Fi Blue</option>
-          <option value="contrast">High Contrast</option>
-          <option value="noir">Noir (B&W)</option>
-        </select>
-        <button id="demoA" class="btn-small">Demo A</button>
-        <button id="demoB" class="btn-small">Demo B</button>
-        <button id="devToggle" class="btn-small">Dev Mode</button>
-      `;
+    const fileInput = document.getElementById('fileInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const preview = document.createElement('video');
+    preview.controls = true; preview.style.width='100%'; preview.style.borderRadius='8px'; preview.style.marginTop='10px';
+    document.querySelector('.uploader').insertBefore(preview, document.querySelector('.demo-thumb'));
 
-      const uploader = document.querySelector('.uploader');
-      uploader.insertBefore(controlRow, uploader.children[2]);
+    let cropStart = null;
+    let cropEnd = null;
+    let isDragging = false;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasContainer = document.querySelector('.uploader');
+    canvas.style.position='absolute'; canvas.style.top='0'; canvas.style.left='0'; canvas.style.zIndex='50'; canvas.style.display='none';
+    canvasContainer.appendChild(canvas);
 
-      // preview video element
-      const preview = document.createElement('video');
-      preview.controls = true; preview.style.width='100%'; preview.style.borderRadius='8px'; preview.style.marginTop='10px';
-      uploader.insertBefore(preview, uploader.children[2]);
+    // Mouse / touch events for rectangle selection
+    function startCrop(e){ isDragging=true; const rect = canvas.getBoundingClientRect(); cropStart={x:(e.clientX||e.touches[0].clientX)-rect.left, y:(e.clientY||e.touches[0].clientY)-rect.top}; }
+    function moveCrop(e){ if(!isDragging) return; const rect = canvas.getBoundingClientRect(); cropEnd={x:(e.clientX||e.touches[0].clientX)-rect.left, y:(e.clientY||e.touches[0].clientY)-rect.top}; drawCrop(); }
+    function endCrop(){ isDragging=false; }
+    function drawCrop(){ if(!cropStart || !cropEnd) return; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.strokeStyle='yellow'; ctx.lineWidth=2; ctx.strokeRect(cropStart.x, cropStart.y, cropEnd.x-cropStart.x, cropEnd.y-cropStart.y); }
 
-      // dev box
-      const devBox = document.createElement('div'); devBox.className='devbox'; devBox.style.display='none'; devBox.id='devBox'; devBox.textContent='FFmpeg command will appear here.';
-      uploader.appendChild(devBox);
+    preview.addEventListener('loadedmetadata', ()=>{ canvas.width=preview.videoWidth; canvas.height=preview.videoHeight; canvas.style.display='block'; });
+    canvas.addEventListener('mousedown', startCrop); canvas.addEventListener('touchstart', startCrop);
+    canvas.addEventListener('mousemove', moveCrop); canvas.addEventListener('touchmove', moveCrop);
+    canvas.addEventListener('mouseup', endCrop); canvas.addEventListener('touchend', endCrop);
 
-      // bind demo buttons
-      const demoA = document.getElementById('demoA');
-      const demoB = document.getElementById('demoB');
-      const devToggle = document.getElementById('devToggle');
-
-      demoA.addEventListener('click', ()=>loadDemo('https://sample-videos.com/video123/mp4/240/big_buck_bunny_240p_1mb.mp4'));
-      demoB.addEventListener('click', ()=>loadDemo('https://sample-videos.com/video123/mp4/240/big_buck_bunny_240p_1mb.mp4'));
-
-      devToggle.addEventListener('click', ()=>{ devBox.style.display = devBox.style.display==='none' ? 'block' : 'none'; });
-
-      function loadDemo(url){
-        preview.src = url; preview.play();
-        uploadStatus.textContent = 'Loaded demo video.';
-      }
-
-      // file selection preview
-      fileInput.addEventListener('change', ()=>{
-        const f=fileInput.files[0];
-        if(!f) return; preview.src = URL.createObjectURL(f); preview.play(); uploadStatus.textContent = `Selected: ${f.name} (${Math.round(f.size/1024)} KB)`;
-      });
-
-      // helper to build filter chain
-      function buildFilterChain(pov, filter){
-        let vf = '';
-        if(pov==='center') vf = 'crop=in_w*0.6:in_h*0.6,scale=1280:720';
-        if(pov==='left') vf = 'crop=in_w*0.6:in_h*0.6:0:in_h*0.2,scale=1280:720';
-        if(pov==='right') vf = 'crop=in_w*0.6:in_h*0.6:in_w*0.4:in_h*0.2,scale=1280:720';
-        if(pov==='stabilize') vf = 'crop=in_w*0.7:in_h*0.7,deshake,scale=1280:720';
-
-        // color filters
-        if(filter==='warm') vf += ',eq=gamma_r=1.05:gamma_g=1.02:gamma_b=0.98:saturation=1.08';
-        if(filter==='blue') vf += ',eq=gamma_r=0.95:gamma_g=1.0:gamma_b=1.08:saturation=1.1';
-        if(filter==='contrast') vf += ',eq=contrast=1.3:saturation=1.05';
-        if(filter==='noir') vf += ',format=gray,eq=contrast=1.15';
-
-        return vf;
-      }
-
-      // load ffmpeg on first generation
-      let ffmpegLoaded=false;
-      async function ensureFFmpeg(){ if(ffmpegLoaded) return; uploadStatus.textContent='Loading WebAssembly ffmpeg (first-time)...'; await ffmpeg.load(); ffmpegLoaded=true; uploadStatus.textContent='ffmpeg loaded.' }
-
-      // set progress
-      ffmpeg.setProgress(p=>{
-        if(p && p.ratio){ uploadStatus.textContent = `Processing... ${Math.round(p.ratio*100)}%`; }
-      });
-
-      // generate handler
-      btnGenerate.addEventListener('click', async ()=>{
-        const pov = document.getElementById('charSelect').value;
-        const filter = document.getElementById('filterSelect').value;
-        const f = fileInput.files[0];
-        if(!f && !preview.src){ alert('Please upload a file or choose a demo.'); return; }
-
-        await ensureFFmpeg();
-
-        // fetch file (demo uses URL)
-        let inputName = 'input.mp4';
-        if(fileInput.files[0]){
-          ffmpeg.FS('writeFile', inputName, await fetchFile(fileInput.files[0]));
-        } else {
-          // fetch remote demo
-          const res = await fetch(preview.src);
-          const ab = await res.arrayBuffer();
-          ffmpeg.FS('writeFile', inputName, new Uint8Array(ab));
-        }
-
-        const vf = buildFilterChain(pov, filter);
-        const out = 'output_pov.mp4';
-        const cmd = ['-i', inputName, '-vf', vf, '-preset', 'veryfast', out];
-
-        // show dev command
-        devBox.textContent = 'ffmpeg ' + cmd.join(' ');
-
-        try{
-          uploadStatus.textContent='Processing (this runs locally in your browser)...';
-          btnGenerate.disabled=true; btnGenerate.textContent='Processing...';
-          await ffmpeg.run(...cmd);
-          const data = ffmpeg.FS('readFile', out);
-          const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-          const a = document.createElement('a'); a.href=url; a.download='newday_pov_demo.mp4'; a.click();
-          uploadStatus.textContent='✅ POV video ready — downloaded to your device.';
-        }catch(err){
-          console.error(err); uploadStatus.textContent = '❌ Processing failed (browser may be low on memory). Try a smaller file or use Chrome desktop.';
-        }finally{ btnGenerate.disabled=false; btnGenerate.textContent='Generate POV'; }
-
-      });
-
-      // preview ai button: quick simulate effect without ffmpeg (fast)
-      btnPreview.addEventListener('click', ()=>{
-        const pov = document.getElementById('charSelect').value;
-        const filter = document.getElementById('filterSelect').value;
-        if(!preview.src){ alert('Please upload or load a demo to preview.'); return; }
-        uploadStatus.textContent='Generating quick preview...';
-        // quick CSS transform preview
-        preview.style.transition='transform 0.8s ease, filter 0.6s ease';
-        if(pov==='left') preview.style.transform='scale(1.1) translateX(-8%)';
-        if(pov==='right') preview.style.transform='scale(1.1) translateX(8%)';
-        if(pov==='center') preview.style.transform='scale(1.08)';
-        if(pov==='stabilize') preview.style.transform='scale(1.03)';
-        if(filter==='warm') preview.style.filter='sepia(0.08) saturate(1.05)';
-        if(filter==='blue') preview.style.filter='hue-rotate(200deg) saturate(1.05)';
-        if(filter==='contrast') preview.style.filter='contrast(1.1)';
-        if(filter==='noir') preview.style.filter='grayscale(1) contrast(1.15)';
-        setTimeout(()=>{ preview.style.transform='none'; preview.style.filter='none'; uploadStatus.textContent='Preview complete (simulated).'; },900);
-      });
-
-      // top buttons open file dialog
-      heroUpload.addEventListener('click', ()=>fileInput.click());
-      btnUploadTop.addEventListener('click', ()=>fileInput.click());
-
-    })();
+    document.getElementById('btnGenerate').addEventListener('click', ()=>{
+      if(!cropStart || !cropEnd){ alert('Please select a character area first.'); return; }
+      uploadStatus.textContent='Processing POV video (simulated)...';
+      // Simulate video processing using MediaRecorder & Canvas
+      const duration = Math.min(20, preview.duration||10);
+      canvas.width=preview.videoWidth; canvas.height=preview.videoHeight;
+      const stream = canvas.captureStream(25); // 25fps
+      const recorder = new MediaRecorder(stream);
+      const chunks=[];
+      recorder.ondataavailable = e=>chunks.push(e.data);
+      recorder.onstop = ()=>{
+        const blob = new Blob(chunks, {type:'video/webm'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download='newday_pov_demo.webm'; a.click();
+        uploadStatus.textContent='✅ POV video ready — downloaded to your device.';
+      };
+      recorder.start();
+      let currentTime=0;
+      const step = 0.04; // 25fps
+      const interval = setInterval(()=>{
+        if(currentTime>=duration){ clearInterval(interval); recorder.stop(); return; }
+        ctx.drawImage(preview, cropStart.x, cropStart.y, cropEnd.x-cropStart.x, cropEnd.y-cropStart.y, 0,0,canvas.width,canvas.height);
+        currentTime+=step;
+      }, step*1000);
+    });
   </script>
 </body>
 </html>
