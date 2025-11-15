@@ -24,13 +24,13 @@ a{color:inherit;text-decoration:none}
 .features{display:flex;gap:12px;flex-wrap:wrap}
 .chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px;cursor:pointer}
 .hero-right{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
-.uploader{display:flex;flex-direction:column;gap:10px}
-.uploader input[type=file]{display:none}
+.uploader{display:flex;flex-direction:column;gap:10px;position:relative}
+.uploader input[type=file]{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;z-index:-1;}
 .upload-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px dashed rgba(255,255,255,0.06);padding:12px;border-radius:10px;color:var(--muted);cursor:pointer}
 .small{font-size:13px;color:var(--muted)}
 .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
-canvas{width:100%;border-radius:10px;margin-top:10px;background:#000}
-select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef6;font-weight:600;margin-top:6px}
+.spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
 </style>
 </head>
@@ -59,41 +59,22 @@ select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);bac
 <span class="chip">AI POV</span>
 <span class="chip">Prototype</span>
 </div>
-<div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap">
-<a class="cta" id="heroUpload">Choose Video</a>
+<div style="margin-top:18px;display:flex;gap:12px">
+<a class="cta" id="heroUpload">Try Demo</a>
 </div>
 </div>
-
 <aside class="hero-right">
 <div class="uploader">
 <div class="demo-thumb">Demo preview</div>
-<label class="upload-btn" for="fileInput">Choose a video<input type="file" id="fileInput" accept="video/mp4,video/quicktime"></label>
+<label class="upload-btn" for="fileInput">Choose a video</label>
+<input type="file" id="fileInput" accept="video/mp4,video/quicktime">
 <div class="small">Supported: MP4, MOV | Max 50MB</div>
-
-<!-- Character POV -->
-<select id="charSelect">
-<option value="center">Character A — Center POV</option>
-<option value="left">Character B — Left POV</option>
-<option value="right">Character C — Right POV</option>
-<option value="stabilize">Character D — Stabilized POV</option>
-</select>
-
-<!-- Color Filter -->
-<select id="filterSelect">
-<option value="none">No filter</option>
-<option value="warm">Cinematic Warm</option>
-<option value="blue">Sci-Fi Blue</option>
-<option value="contrast">High Contrast</option>
-<option value="noir">Noir (B&W)</option>
-</select>
-
 <div style="display:flex;gap:10px;margin-top:8px">
 <button class="chip" id="btnGenerate">Generate POV</button>
 <button class="chip" id="btnPreview">Preview</button>
 </div>
-
 <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
-<canvas id="previewCanvas" style="display:none;height:220px"></canvas>
+<video id="previewVideo" style="display:none;width:100%;border-radius:10px;margin-top:10px" controls></video>
 </div>
 </aside>
 </section>
@@ -111,97 +92,63 @@ const btnPreview=document.getElementById('btnPreview');
 const heroUpload=document.getElementById('heroUpload');
 const btnUploadTop=document.getElementById('btnUploadTop');
 const demoThumb=document.querySelector('.demo-thumb');
-const previewCanvas=document.getElementById('previewCanvas');
-const ctx=previewCanvas.getContext('2d');
-const charSelect=document.getElementById('charSelect');
-const filterSelect=document.getElementById('filterSelect');
+const previewVideo=document.getElementById('previewVideo');
 
-[heroUpload,btnUploadTop].forEach(btn=>btn.addEventListener('click',()=>fileInput.click()));
+// Always trigger file input on button click
+[heroUpload,btnUploadTop].forEach(btn=>{
+  btn.addEventListener('click',()=>fileInput.click());
+});
 
-let videoEl=document.createElement('video'); videoEl.crossOrigin='anonymous';
-fileInput.addEventListener('change',()=>{
+// Handle file selection
+fileInput.addEventListener('change',async()=>{
   const file=fileInput.files[0];
   if(!file){uploadStatus.textContent="No file selected."; return;}
-  if(!['video/mp4','video/quicktime'].includes(file.type)){uploadStatus.textContent="Unsupported type!"; fileInput.value=''; return;}
-  if(file.size>50*1024*1024){uploadStatus.textContent="File too large!"; fileInput.value=''; return;}
-  videoEl.src=URL.createObjectURL(file);
-  videoEl.load();
-  videoEl.onloadedmetadata=()=>{
-    if(videoEl.duration<5 || videoEl.duration>59){uploadStatus.textContent="Video must be 5–59s!"; fileInput.value=''; return;}
-    uploadStatus.textContent=`File ready: ${file.name} (${Math.round(videoEl.duration)}s)`;
-    demoThumb.style.display='none';
-    previewCanvas.style.display='block';
+  if(!['video/mp4','video/quicktime'].includes(file.type)){
+    uploadStatus.textContent="Unsupported file type! MP4/MOV only."; fileInput.value=''; return;
+  }
+  if(file.size>50*1024*1024){uploadStatus.textContent="File too large! Max 50MB."; fileInput.value=''; return;}
+  
+  const tmpVideo=document.createElement('video');
+  tmpVideo.preload='metadata';
+  tmpVideo.src=URL.createObjectURL(file);
+  tmpVideo.onloadedmetadata=()=>{
+    if(tmpVideo.duration<5 || tmpVideo.duration>59){
+      uploadStatus.textContent="Video must be 5–59 seconds!"; fileInput.value=''; return;
+    } else {
+      uploadStatus.textContent=`File ready: ${file.name} (${Math.round(tmpVideo.duration)}s)`;
+      demoThumb.textContent="Ready for preview or generation";
+    }
   };
 });
 
-// Canvas Preview
-function applyFilter(v,x,y,w,h,filter){
-  ctx.drawImage(v,0,0,ctx.canvas.width,ctx.canvas.height);
-  const img=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
-  const data=img.data;
-  for(let i=0;i<data.length;i+=4){
-    let r=data[i],g=data[i+1],b=data[i+2];
-    if(filter==='warm'){ r=r*1.05; g=g*1.02; b=b*0.98; }
-    if(filter==='blue'){ r=r*0.95; g=g; b=b*1.08; }
-    if(filter==='contrast'){ r=128+(r-128)*1.3; g=128+(g-128)*1.3; b=128+(b-128)*1.3; }
-    if(filter==='noir'){ let avg=(r+g+b)/3; r=g=b=avg*1.15; }
-    data[i]=Math.min(255,r); data[i+1]=Math.min(255,g); data[i+2]=Math.min(255,b);
-  }
-  ctx.putImageData(img,0,0);
-}
-
-function drawLoop(){ 
-  if(videoEl.paused || videoEl.ended) return;
-  let pov=charSelect.value;
-  let filter=filterSelect.value;
-  let sx=0, sy=0, sw=videoEl.videoWidth, sh=videoEl.videoHeight;
-  if(pov==='left'){ sx=0; sw*=0.6; } 
-  if(pov==='right'){ sx=videoEl.videoWidth*0.4; sw*=0.6; } 
-  if(pov==='center'){ sw*=0.6; sh*=0.6; } 
-  if(pov==='stabilize'){ sw*=0.7; sh*=0.7; }
-  ctx.drawImage(videoEl,sx,sy,sw,sh,0,0,previewCanvas.width,previewCanvas.height);
-  applyFilter(videoEl,0,0,sw,sh,filter);
-  requestAnimationFrame(drawLoop);
-}
-
-btnPreview.addEventListener('click',()=>{
-  if(!videoEl.src){alert("Select a video first"); return;}
-  videoEl.play();
-  drawLoop();
-  uploadStatus.textContent="Previewing on canvas...";
+// Preview first 2 seconds using FFmpeg
+btnPreview.addEventListener('click',async()=>{
+  const file=fileInput.files[0];
+  if(!file){alert("Select a file first"); return;}
+  uploadStatus.textContent="Loading FFmpeg for preview...";
+  if(!ffmpeg.isLoaded()) await ffmpeg.load();
+  uploadStatus.textContent="Generating preview frame...";
+  ffmpeg.FS('writeFile','input.mp4',await fetchFile(file));
+  await ffmpeg.run('-i','input.mp4','-t','2','-c','copy','preview.mp4');
+  const data=ffmpeg.FS('readFile','preview.mp4');
+  const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
+  previewVideo.src=url; previewVideo.style.display='block';
+  demoThumb.style.display='none';
+  uploadStatus.textContent="Preview ready!";
 });
 
-// POV Generation
-let ffmpegLoaded=false;
-async function ensureFFmpeg(){if(ffmpegLoaded) return; uploadStatus.textContent='Loading FFmpeg...'; await ffmpeg.load(); ffmpegLoaded=true; uploadStatus.textContent='FFmpeg loaded';}
-function buildFilter(pov,filter){
-  let vf='';
-  if(pov==='center') vf='crop=in_w*0.6:in_h*0.6,scale=640:360';
-  if(pov==='left') vf='crop=in_w*0.6:in_h*0.6:0:0,scale=640:360';
-  if(pov==='right') vf='crop=in_w*0.6:in_h*0.6:in_w*0.4:0,scale=640:360';
-  if(pov==='stabilize') vf='crop=in_w*0.7:in_h*0.7,scale=640:360';
-  if(filter==='warm') vf+=',eq=gamma_r=1.05:gamma_g=1.02:gamma_b=0.98:saturation=1.08';
-  if(filter==='blue') vf+=',eq=gamma_r=0.95:gamma_g=1.0:gamma_b=1.08:saturation=1.1';
-  if(filter==='contrast') vf+=',eq=contrast=1.3:saturation=1.05';
-  if(filter==='noir') vf+=',format=gray,eq=contrast=1.15';
-  return vf;
-}
-
+// Simulate POV generation
 btnGenerate.addEventListener('click',async()=>{
   const file=fileInput.files[0];
   if(!file){alert("Select a file first"); return;}
-  await ensureFFmpeg();
-  uploadStatus.textContent='Generating POV video...';
-  const inputName='input.mp4', outName='output_pov.mp4';
-  ffmpeg.FS('writeFile', inputName, await fetchFile(file));
-  const vf=buildFilter(charSelect.value, filterSelect.value);
-  try{
-    await ffmpeg.run('-i',inputName,'-vf',vf,'-preset','veryfast',outName);
-    const data=ffmpeg.FS('readFile',outName);
-    const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
-    const a=document.createElement('a'); a.href=url; a.download='newday_pov.mp4'; a.click();
-    uploadStatus.textContent='✅ POV video ready — downloaded.';
-  }catch(e){console.error(e); uploadStatus.textContent='❌ Generation failed.';}
+  uploadStatus.textContent="Generating POV (simulated)...";
+  demoThumb.style.display='flex';
+  demoThumb.textContent="Generating AI POV...";
+  previewVideo.style.display='none';
+  setTimeout(()=>{
+    demoThumb.textContent="POV generated! (prototype)";
+    uploadStatus.textContent="POV generation complete.";
+  },2000);
 });
 });
 </script>
