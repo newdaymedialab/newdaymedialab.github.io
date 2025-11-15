@@ -23,6 +23,7 @@ a{color:inherit;text-decoration:none}
 .hero-left p{margin:0 0 18px;color:var(--muted);font-size:15px}
 .features{display:flex;gap:12px;flex-wrap:wrap}
 .chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px;cursor:pointer}
+.chip:disabled{opacity:0.4;cursor:not-allowed}
 .hero-right{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
 .uploader{display:flex;flex-direction:column;gap:10px;position:relative}
 input[type=file]{padding:12px;border:1px dashed rgba(255,255,255,0.06);border-radius:10px;color:var(--muted);background:var(--panel);}
@@ -36,161 +37,288 @@ canvas{display:block;margin-top:10px;border-radius:10px;background:#000;}
 <body>
 
 <nav class="nav">
-<div class="brand">
-<div class="logo"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="white" opacity="0.12"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="#071014" fill-opacity="0.9"/></svg></div>
-<div><h3>NewDay Media Lab</h3><p class="muted">AI POV Demo</p></div>
-</div>
-<div class="menu">
-<a href="#home">Home</a><a href="#project">Project</a><a href="#roadmap">Roadmap</a><a href="#support">Support</a>
-</div>
-<div style="display:flex;gap:10px;align-items:center">
-<a class="cta" id="btnUploadTop">Upload</a>
-</div>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="9" fill="white" opacity="0.12"/>
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="#071014" fill-opacity="0.9"/>
+      </svg>
+    </div>
+    <div>
+      <h3>NewDay Media Lab</h3>
+      <p class="muted">AI POV Demo</p>
+    </div>
+  </div>
+  <div class="menu">
+    <a href="#home">Home</a><a href="#project">Project</a><a href="#roadmap">Roadmap</a><a href="#support">Support</a>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <a class="cta" id="btnUploadTop">Upload</a>
+  </div>
 </nav>
 
 <main>
 <section id="home" class="hero">
-<div class="hero-left">
-<h1>See the world through their eyes.</h1>
-<p class="muted">Upload a short clip (5–59s) and choose a character to generate a POV video using AI.</p>
-<div class="features" style="margin-top:14px">
-<span class="chip">Short clips • 5–59s</span>
-<span class="chip">AI POV</span>
-<span class="chip">Prototype</span>
-</div>
-<div style="margin-top:18px;display:flex;gap:12px;align-items:center">
-<a class="cta" id="heroUpload">Try Demo</a>
-<select id="characterSelect" disabled>
-<option value="none">Select Character</option>
-<option value="soldier">Soldier</option>
-<option value="athlete">Athlete</option>
-<option value="child">Child</option>
-<option value="robot">Robot</option>
-</select>
-</div>
-</div>
-<aside class="hero-right">
-<div class="uploader">
-<div class="demo-thumb">Demo preview</div>
-<input type="file" id="fileInput" accept="video/mp4,video/quicktime">
-<div class="small">Supported: MP4, MOV | Max 50MB</div>
-<div style="display:flex;gap:10px;margin-top:8px">
-<button class="chip" id="btnGenerate">Generate POV</button>
-<button class="chip" id="btnPreview">Preview</button>
-</div>
-<div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
-<video id="previewVideo" style="display:none;width:100%;border-radius:10px;margin-top:10px" controls></video>
-<canvas id="povCanvas" width="420" height="220" style="display:none"></canvas>
-</div>
-</aside>
+  <div class="hero-left">
+    <h1>See the world through their eyes.</h1>
+    <p class="muted">Upload a short clip (5–59s) and choose a character to generate a POV video using AI.</p>
+    <div class="features" style="margin-top:14px">
+      <span class="chip">Short clips • 5–59s</span>
+      <span class="chip">AI POV</span>
+      <span class="chip">Prototype</span>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
+      <a class="cta" id="heroUpload">Try Demo</a>
+      <select id="characterSelect" disabled>
+        <option value="none">Select Character</option>
+        <option value="soldier">Soldier</option>
+        <option value="athlete">Athlete</option>
+        <option value="child">Child</option>
+        <option value="robot">Robot</option>
+      </select>
+    </div>
+  </div>
+
+  <aside class="hero-right">
+    <div class="uploader">
+      <div class="demo-thumb">Demo preview</div>
+      <input type="file" id="fileInput" accept="video/mp4,video/quicktime">
+      <div class="small">Supported: MP4, MOV | Max 50MB</div>
+      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+        <button class="chip" id="btnGenerate" disabled>Generate POV</button>
+        <button class="chip" id="btnPreview" disabled>Preview</button>
+        <a class="chip" id="btnDownload" style="display:none" download="pov-output.webm">Download POV</a>
+      </div>
+      <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
+      <video id="previewVideo" style="display:none;width:100%;border-radius:10px;margin-top:10px" controls></video>
+      <canvas id="povCanvas" width="420" height="220" style="display:none"></canvas>
+    </div>
+  </aside>
 </section>
 </main>
 
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.2/dist/ffmpeg.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
-const { createFFmpeg, fetchFile }=FFmpeg;
-const ffmpeg=createFFmpeg({ log:false });
-ffmpeg.load(); // önceden yükle
-const fileInput=document.getElementById('fileInput');
-const uploadStatus=document.getElementById('uploadStatus');
-const btnGenerate=document.getElementById('btnGenerate');
-const btnPreview=document.getElementById('btnPreview');
-const heroUpload=document.getElementById('heroUpload');
-const btnUploadTop=document.getElementById('btnUploadTop');
-const demoThumb=document.querySelector('.demo-thumb');
-const previewVideo=document.getElementById('previewVideo');
-const characterSelect=document.getElementById('characterSelect');
-const povCanvas=document.getElementById('povCanvas');
-const ctx=povCanvas.getContext('2d');
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput       = document.getElementById('fileInput');
+  const uploadStatus    = document.getElementById('uploadStatus');
+  const btnGenerate     = document.getElementById('btnGenerate');
+  const btnPreview      = document.getElementById('btnPreview');
+  const btnDownload     = document.getElementById('btnDownload');
+  const heroUpload      = document.getElementById('heroUpload');
+  const btnUploadTop    = document.getElementById('btnUploadTop');
+  const demoThumb       = document.querySelector('.demo-thumb');
+  const previewVideo    = document.getElementById('previewVideo');
+  const characterSelect = document.getElementById('characterSelect');
+  const povCanvas       = document.getElementById('povCanvas');
+  const ctx             = povCanvas.getContext('2d');
 
-let selectedFile=null;
+  let selectedFile   = null;
+  let currentVideoURL = null;
 
-// Trigger file input
-[heroUpload, btnUploadTop].forEach(btn => btn.addEventListener('click', () => fileInput.click()));
+  // File inputı tetikle
+  [heroUpload, btnUploadTop].forEach(btn => {
+    btn.addEventListener('click', () => fileInput.click());
+  });
 
-// File selection
-fileInput.addEventListener('change', async()=>{
-  selectedFile=fileInput.files[0];
-  if(!selectedFile){uploadStatus.textContent="No file selected."; return;}
-  if(!['video/mp4','video/quicktime'].includes(selectedFile.type)){
-    uploadStatus.textContent="Unsupported file type! MP4/MOV only."; fileInput.value=''; return;
+  // Ortak reset fonksiyonu
+  function resetView() {
+    previewVideo.style.display = 'none';
+    povCanvas.style.display    = 'none';
+    demoThumb.style.display    = 'flex';
+    btnDownload.style.display  = 'none';
   }
-  if(selectedFile.size>50*1024*1024){uploadStatus.textContent="File too large! Max 50MB."; fileInput.value=''; return;}
 
-  const tmpVideo=document.createElement('video');
-  tmpVideo.preload='metadata';
-  tmpVideo.src=URL.createObjectURL(selectedFile);
-  tmpVideo.onloadedmetadata=()=>{
-    if(tmpVideo.duration<5 || tmpVideo.duration>59){
-      uploadStatus.textContent="Video must be 5–59 seconds!"; fileInput.value=''; return;
-    } else {
-      uploadStatus.textContent=`File ready: ${selectedFile.name} (${Math.round(tmpVideo.duration)}s)`;
-      demoThumb.textContent="Ready for preview or generation";
-      characterSelect.disabled=false; // activate character selection
+  // Dosya seçildiğinde
+  fileInput.addEventListener('change', () => {
+    resetView();
+    selectedFile = fileInput.files[0];
+
+    if (!selectedFile) {
+      uploadStatus.textContent = "No file selected.";
+      btnGenerate.disabled = true;
+      btnPreview.disabled  = true;
+      characterSelect.disabled = true;
+      return;
     }
-  };
-});
 
-// Preview
-btnPreview.addEventListener('click', async()=>{
-  if(!selectedFile){alert("Select a file first"); return;}
-  uploadStatus.textContent="Generating preview...";
-  await ffmpeg.load();
-  ffmpeg.FS('writeFile','input.mp4',await fetchFile(selectedFile));
-  await ffmpeg.run('-i','input.mp4','-t','2','-c:v','libx264','-c:a','aac','preview.mp4');
-  const data=ffmpeg.FS('readFile','preview.mp4');
-  const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
-  previewVideo.src=url; previewVideo.style.display='block';
-  demoThumb.style.display='none';
-  povCanvas.style.display='none';
-  uploadStatus.textContent="Preview ready!";
-});
+    if (!['video/mp4','video/quicktime'].includes(selectedFile.type)) {
+      uploadStatus.textContent = "Unsupported file type! MP4/MOV only.";
+      fileInput.value = '';
+      selectedFile = null;
+      btnGenerate.disabled = true;
+      btnPreview.disabled  = true;
+      characterSelect.disabled = true;
+      return;
+    }
 
-// POV Generation on canvas
-btnGenerate.addEventListener('click', async()=>{
-  if(!selectedFile){alert("Select a file first"); return;}
-  if(characterSelect.value==='none'){alert("Select a character first"); return;}
+    if (selectedFile.size > 50 * 1024 * 1024) {
+      uploadStatus.textContent = "File too large! Max 50MB.";
+      fileInput.value = '';
+      selectedFile = null;
+      btnGenerate.disabled = true;
+      btnPreview.disabled  = true;
+      characterSelect.disabled = true;
+      return;
+    }
 
-  uploadStatus.textContent="Video is being processed...";
-  demoThumb.style.display='none';
-  previewVideo.style.display='none';
-  povCanvas.style.display='block';
+    // Süre kontrolü
+    const tmpVideo = document.createElement('video');
+    const tmpURL = URL.createObjectURL(selectedFile);
+    tmpVideo.preload = 'metadata';
+    tmpVideo.src = tmpURL;
 
-  const videoURL=URL.createObjectURL(selectedFile);
-  const video=document.createElement('video');
-  video.src=videoURL;
-  video.muted=true;
+    tmpVideo.onloadedmetadata = () => {
+      const dur = tmpVideo.duration;
+      URL.revokeObjectURL(tmpURL);
 
-  video.addEventListener('loadeddata',()=>{
-    video.play();
-
-    const randomMotion=()=>Math.random()*4-2;
-    const drawFrame=()=>{
-      if(video.paused || video.ended) return;
-      const offsetX=randomMotion(), offsetY=randomMotion();
-      ctx.clearRect(0,0,povCanvas.width,povCanvas.height);
-      ctx.drawImage(video, 0,0, video.videoWidth, video.videoHeight, offsetX, offsetY, povCanvas.width, povCanvas.height);
-
-      // Color overlay per character
-      switch(characterSelect.value){
-        case 'soldier': ctx.fillStyle='rgba(0,128,0,0.2)'; break;
-        case 'athlete': ctx.fillStyle='rgba(255,255,0,0.2)'; break;
-        case 'child': ctx.fillStyle='rgba(255,192,203,0.2)'; break;
-        case 'robot': ctx.fillStyle='rgba(0,255,255,0.2)'; break;
+      if (dur < 5 || dur > 59) {
+        uploadStatus.textContent = "Video must be 5–59 seconds!";
+        fileInput.value = '';
+        selectedFile = null;
+        btnGenerate.disabled = true;
+        btnPreview.disabled  = true;
+        characterSelect.disabled = true;
+      } else {
+        uploadStatus.textContent = `File ready: ${selectedFile.name} (${Math.round(dur)}s)`;
+        demoThumb.textContent    = "Ready for preview or generation";
+        btnGenerate.disabled     = false;
+        btnPreview.disabled      = false;
+        characterSelect.disabled = false;
       }
-      ctx.fillRect(0,0,povCanvas.width,povCanvas.height);
-
-      requestAnimationFrame(drawFrame);
     };
-    drawFrame();
-    uploadStatus.textContent=`POV generated for ${characterSelect.value}.`;
   });
 
-  video.addEventListener('ended',()=>{
-    uploadStatus.textContent="POV playback ended.";
+  // Önizleme
+  btnPreview.addEventListener('click', () => {
+    if (!selectedFile) {
+      alert("Önce bir video seç.");
+      return;
+    }
+
+    if (currentVideoURL) {
+      URL.revokeObjectURL(currentVideoURL);
+    }
+    currentVideoURL = URL.createObjectURL(selectedFile);
+
+    previewVideo.src = currentVideoURL;
+    previewVideo.style.display = 'block';
+    povCanvas.style.display    = 'none';
+    demoThumb.style.display    = 'none';
+    btnDownload.style.display  = 'none';
+    uploadStatus.textContent   = "Preview playing...";
   });
-});
+
+  // POV oluşturma + kayıt
+  btnGenerate.addEventListener('click', () => {
+    if (!selectedFile) {
+      alert("Önce bir video seç.");
+      return;
+    }
+    if (characterSelect.value === 'none') {
+      alert("Önce karakter seç.");
+      return;
+    }
+
+    resetView();
+    demoThumb.style.display   = 'none';
+    povCanvas.style.display   = 'block';
+    uploadStatus.textContent  = "POV oluşturuluyor...";
+
+    if (currentVideoURL) {
+      URL.revokeObjectURL(currentVideoURL);
+    }
+    currentVideoURL = URL.createObjectURL(selectedFile);
+
+    const video = document.createElement('video');
+    video.src       = currentVideoURL;
+    video.muted     = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+
+    let recorder        = null;
+    let recordedChunks  = [];
+
+    video.addEventListener('loadedmetadata', () => {
+      // Canvas sabit boyutlu kalsın
+      povCanvas.width  = 420;
+      povCanvas.height = 220;
+
+      // Canvas stream'ini yakala
+      const stream = povCanvas.captureStream();
+      if (typeof MediaRecorder !== 'undefined') {
+        try {
+          recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        } catch (e) {
+          console.warn('MediaRecorder error:', e);
+        }
+      }
+
+      if (recorder) {
+        recordedChunks = [];
+        recorder.ondataavailable = e => {
+          if (e.data && e.data.size > 0) {
+            recordedChunks.push(e.data);
+          }
+        };
+        recorder.onstop = () => {
+          if (recordedChunks.length === 0) {
+            uploadStatus.textContent = "Kayıt alınamadı.";
+            return;
+          }
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const downloadURL = URL.createObjectURL(blob);
+          btnDownload.href = downloadURL;
+          btnDownload.style.display = 'inline-flex';
+          uploadStatus.textContent = "POV hazır, indirebilirsin.";
+        };
+        recorder.start();
+      } else {
+        uploadStatus.textContent = "Tarayıcı video kaydını desteklemiyor, sadece canlı izleyebilirsin.";
+      }
+
+      const randomMotion = () => Math.random() * 4 - 2;
+
+      function drawFrame() {
+        if (video.paused || video.ended) return;
+
+        const offsetX = randomMotion();
+        const offsetY = randomMotion();
+
+        ctx.clearRect(0, 0, povCanvas.width, povCanvas.height);
+        ctx.drawImage(
+          video,
+          0, 0, video.videoWidth, video.videoHeight,
+          offsetX, offsetY, povCanvas.width, povCanvas.height
+        );
+
+        // Karakter rengine göre overlay
+        switch (characterSelect.value) {
+          case 'soldier': ctx.fillStyle = 'rgba(0,128,0,0.25)'; break;
+          case 'athlete': ctx.fillStyle = 'rgba(255,255,0,0.25)'; break;
+          case 'child':   ctx.fillStyle = 'rgba(255,192,203,0.25)'; break;
+          case 'robot':   ctx.fillStyle = 'rgba(0,255,255,0.25)'; break;
+          default:        ctx.fillStyle = 'rgba(0,0,0,0)'; break;
+        }
+        ctx.fillRect(0, 0, povCanvas.width, povCanvas.height);
+
+        requestAnimationFrame(drawFrame);
+      }
+
+      video.play().then(() => {
+        drawFrame();
+      }).catch(err => {
+        console.error(err);
+        uploadStatus.textContent = "Video oynatılamadı (tarayıcı kısıtlaması olabilir).";
+      });
+    });
+
+    video.addEventListener('ended', () => {
+      uploadStatus.textContent = "POV oynatma bitti.";
+      if (recorder && recorder.state === 'recording') {
+        recorder.stop();
+      }
+    });
+  });
 });
 </script>
 
