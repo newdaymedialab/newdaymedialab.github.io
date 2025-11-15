@@ -17,20 +17,20 @@ a{color:inherit;text-decoration:none}
 .menu{display:flex;gap:18px;align-items:center}
 .menu a{color:var(--muted);font-weight:600;padding:8px;border-radius:8px}
 .menu a:hover{color:#fff;background:rgba(255,255,255,0.02)}
-.cta{background:var(--accent);color:#071014;padding:8px 12px;border-radius:8px;font-weight:700}
+.cta{background:var(--accent);color:#071014;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}
 .hero{max-width:1200px;margin:36px auto 18px;padding:28px 22px;display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
 .hero-left h1{font-size:34px;margin:0 0 8px;color:#fff;line-height:1.03}
 .hero-left p{margin:0 0 18px;color:var(--muted);font-size:15px}
 .features{display:flex;gap:12px;flex-wrap:wrap}
-.chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px}
+.chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px;cursor:pointer}
 .hero-right{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
 .uploader{display:flex;flex-direction:column;gap:10px}
 .uploader input[type=file]{display:none}
 .upload-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px dashed rgba(255,255,255,0.06);padding:12px;border-radius:10px;color:var(--muted);cursor:pointer}
 .small{font-size:13px;color:var(--muted)}
 .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
-.spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
+select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:#e6eef6;font-weight:600;margin-top:6px}
+video{width:100%;border-radius:10px;margin-top:10px;background:#000}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
 </style>
 </head>
@@ -59,23 +59,41 @@ a{color:inherit;text-decoration:none}
 <span class="chip">AI POV</span>
 <span class="chip">Prototype</span>
 </div>
-<div style="margin-top:18px;display:flex;gap:12px">
-<a class="cta" id="heroUpload">Try Demo</a>
+<div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap">
+<a class="cta" id="heroUpload">Choose Video</a>
 </div>
 </div>
+
 <aside class="hero-right">
 <div class="uploader">
 <div class="demo-thumb">Demo preview</div>
-<label class="upload-btn" for="fileInput">Choose a video
-<input type="file" id="fileInput" accept="video/mp4,video/quicktime">
-</label>
+<label class="upload-btn" for="fileInput">Choose a video<input type="file" id="fileInput" accept="video/mp4,video/quicktime"></label>
 <div class="small">Supported: MP4, MOV | Max 50MB</div>
+
+<!-- Character POV -->
+<select id="charSelect">
+<option value="center">Character A — Center POV</option>
+<option value="left">Character B — Left POV</option>
+<option value="right">Character C — Right POV</option>
+<option value="stabilize">Character D — Stabilized POV</option>
+</select>
+
+<!-- Color Filter -->
+<select id="filterSelect">
+<option value="none">No filter</option>
+<option value="warm">Cinematic Warm</option>
+<option value="blue">Sci-Fi Blue</option>
+<option value="contrast">High Contrast</option>
+<option value="noir">Noir (B&W)</option>
+</select>
+
 <div style="display:flex;gap:10px;margin-top:8px">
 <button class="chip" id="btnGenerate">Generate POV</button>
 <button class="chip" id="btnPreview">Preview</button>
 </div>
+
 <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
-<video id="previewVideo" style="display:none;width:100%;border-radius:10px;margin-top:10px" controls></video>
+<video id="previewVideo" style="display:none" controls></video>
 </div>
 </aside>
 </section>
@@ -94,57 +112,81 @@ const heroUpload=document.getElementById('heroUpload');
 const btnUploadTop=document.getElementById('btnUploadTop');
 const demoThumb=document.querySelector('.demo-thumb');
 const previewVideo=document.getElementById('previewVideo');
+const charSelect=document.getElementById('charSelect');
+const filterSelect=document.getElementById('filterSelect');
 
 [heroUpload,btnUploadTop].forEach(btn=>btn.addEventListener('click',()=>fileInput.click()));
 
-fileInput.addEventListener('change',async()=>{
+fileInput.addEventListener('change',()=>{
   const file=fileInput.files[0];
   if(!file){uploadStatus.textContent="No file selected."; return;}
-  // File size & type check
-  if(!['video/mp4','video/quicktime'].includes(file.type)){
-    uploadStatus.textContent="Unsupported file type! MP4/MOV only."; fileInput.value=''; return;
-  }
-  if(file.size>50*1024*1024){uploadStatus.textContent="File too large! Max 50MB."; fileInput.value=''; return;}
-  // Check duration
+  if(!['video/mp4','video/quicktime'].includes(file.type)){uploadStatus.textContent="Unsupported file type!"; fileInput.value=''; return;}
+  if(file.size>50*1024*1024){uploadStatus.textContent="File too large!"; fileInput.value=''; return;}
   const tmpVideo=document.createElement('video');
   tmpVideo.preload='metadata';
   tmpVideo.src=URL.createObjectURL(file);
   tmpVideo.onloadedmetadata=()=>{
-    if(tmpVideo.duration<5 || tmpVideo.duration>59){
-      uploadStatus.textContent="Video must be 5–59 seconds!"; fileInput.value=''; return;
-    } else {
-      uploadStatus.textContent=`File ready: ${file.name} (${Math.round(tmpVideo.duration)}s)`;
-      demoThumb.textContent="Ready for preview or generation";
-    }
+    if(tmpVideo.duration<5 || tmpVideo.duration>59){uploadStatus.textContent="Video must be 5–59s!"; fileInput.value=''; return;}
+    uploadStatus.textContent=`File ready: ${file.name} (${Math.round(tmpVideo.duration)}s)`;
+    demoThumb.textContent="Ready for preview or generation";
   };
 });
 
-btnPreview.addEventListener('click',async()=>{
+// Simple CSS preview with transform and filter
+btnPreview.addEventListener('click',()=>{
   const file=fileInput.files[0];
   if(!file){alert("Select a file first"); return;}
-  uploadStatus.textContent="Loading FFmpeg for preview...";
-  if(!ffmpeg.isLoaded()) await ffmpeg.load();
-  uploadStatus.textContent="Generating preview frame...";
-  // Take first 2s clip as preview
-  ffmpeg.FS('writeFile','input.mp4',await fetchFile(file));
-  await ffmpeg.run('-i','input.mp4','-t','2','-c','copy','preview.mp4');
-  const data=ffmpeg.FS('readFile','preview.mp4');
-  const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
-  previewVideo.src=url; previewVideo.style.display='block';
+  const pov=charSelect.value;
+  const filter=filterSelect.value;
+  previewVideo.src=URL.createObjectURL(file);
+  previewVideo.style.display='block';
   demoThumb.style.display='none';
+  previewVideo.style.transition='transform 0.8s ease, filter 0.6s ease';
+  // POV simulation
+  if(pov==='left') previewVideo.style.transform='scale(1.1) translateX(-8%)';
+  if(pov==='right') previewVideo.style.transform='scale(1.1) translateX(8%)';
+  if(pov==='center') previewVideo.style.transform='scale(1.05)';
+  if(pov==='stabilize') previewVideo.style.transform='scale(1.03)';
+  // Color filters
+  if(filter==='warm') previewVideo.style.filter='sepia(0.08) saturate(1.05)';
+  if(filter==='blue') previewVideo.style.filter='hue-rotate(200deg) saturate(1.05)';
+  if(filter==='contrast') previewVideo.style.filter='contrast(1.1)';
+  if(filter==='noir') previewVideo.style.filter='grayscale(1) contrast(1.15)';
   uploadStatus.textContent="Preview ready!";
 });
+
+// POV Generation with ffmpeg.js
+let ffmpegLoaded=false;
+async function ensureFFmpeg(){if(ffmpegLoaded) return; uploadStatus.textContent='Loading FFmpeg...'; await ffmpeg.load(); ffmpegLoaded=true; uploadStatus.textContent='FFmpeg loaded';}
+
+function buildFilter(pov,filter){
+  let vf='';
+  if(pov==='center') vf='crop=in_w*0.6:in_h*0.6,scale=640:360';
+  if(pov==='left') vf='crop=in_w*0.6:in_h*0.6:0:0,scale=640:360';
+  if(pov==='right') vf='crop=in_w*0.6:in_h*0.6:in_w*0.4:0,scale=640:360';
+  if(pov==='stabilize') vf='crop=in_w*0.7:in_h*0.7,scale=640:360';
+  if(filter==='warm') vf+=',eq=gamma_r=1.05:gamma_g=1.02:gamma_b=0.98:saturation=1.08';
+  if(filter==='blue') vf+=',eq=gamma_r=0.95:gamma_g=1.0:gamma_b=1.08:saturation=1.1';
+  if(filter==='contrast') vf+=',eq=contrast=1.3:saturation=1.05';
+  if(filter==='noir') vf+=',format=gray,eq=contrast=1.15';
+  return vf;
+}
 
 btnGenerate.addEventListener('click',async()=>{
   const file=fileInput.files[0];
   if(!file){alert("Select a file first"); return;}
-  uploadStatus.textContent="Generating POV (simulated)...";
-  demoThumb.textContent="Generating AI POV...";
-  previewVideo.style.display='none';
-  setTimeout(()=>{
-    demoThumb.textContent="POV generated! (prototype)";
-    uploadStatus.textContent="POV generation complete.";
-  },2000);
+  await ensureFFmpeg();
+  uploadStatus.textContent='Generating POV video...';
+  const inputName='input.mp4', outName='output_pov.mp4';
+  ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+  const vf=buildFilter(charSelect.value, filterSelect.value);
+  try{
+    await ffmpeg.run('-i',inputName,'-vf',vf,'-preset','veryfast',outName);
+    const data=ffmpeg.FS('readFile',outName);
+    const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
+    const a=document.createElement('a'); a.href=url; a.download='newday_pov.mp4'; a.click();
+    uploadStatus.textContent='✅ POV video ready — downloaded.';
+  }catch(e){console.error(e); uploadStatus.textContent='❌ Generation failed.';}
 });
 });
 </script>
