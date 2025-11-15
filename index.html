@@ -25,13 +25,11 @@ a{color:inherit;text-decoration:none}
 .chip{background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px;cursor:pointer}
 .hero-right{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
 .uploader{display:flex;flex-direction:column;gap:10px;position:relative}
-.upload-btn{display:inline-flex;align-items:center;gap:10px;background:transparent;border:1px dashed rgba(255,255,255,0.06);padding:12px;border-radius:10px;color:var(--muted);cursor:pointer}
 input[type=file]{padding:12px;border:1px dashed rgba(255,255,255,0.06);border-radius:10px;color:var(--muted);background:var(--panel);}
 .small{font-size:13px;color:var(--muted)}
 .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
-.spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
 #characterSelect{margin-top:10px;background:var(--panel);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:14px;border:1px solid rgba(255,255,255,0.02);}
-@keyframes spin{to{transform:rotate(360deg)}}
+canvas{display:block;margin-top:10px;border-radius:10px;background:#000;}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
 </style>
 </head>
@@ -62,7 +60,7 @@ input[type=file]{padding:12px;border:1px dashed rgba(255,255,255,0.06);border-ra
 </div>
 <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
 <a class="cta" id="heroUpload">Try Demo</a>
-<select id="characterSelect">
+<select id="characterSelect" disabled>
 <option value="none">Select Character</option>
 <option value="soldier">Soldier</option>
 <option value="athlete">Athlete</option>
@@ -82,6 +80,7 @@ input[type=file]{padding:12px;border:1px dashed rgba(255,255,255,0.06);border-ra
 </div>
 <div id="uploadStatus" class="small muted" style="margin-top:8px">No file selected.</div>
 <video id="previewVideo" style="display:none;width:100%;border-radius:10px;margin-top:10px" controls></video>
+<canvas id="povCanvas" width="420" height="220" style="display:none"></canvas>
 </div>
 </aside>
 </section>
@@ -101,65 +100,98 @@ const btnUploadTop=document.getElementById('btnUploadTop');
 const demoThumb=document.querySelector('.demo-thumb');
 const previewVideo=document.getElementById('previewVideo');
 const characterSelect=document.getElementById('characterSelect');
+const povCanvas=document.getElementById('povCanvas');
+const ctx=povCanvas.getContext('2d');
+
+let selectedFile=null;
 
 // Trigger file input
-[heroUpload, btnUploadTop].forEach(btn => {
-  btn.addEventListener('click', () => fileInput.click());
-});
+[heroUpload, btnUploadTop].forEach(btn => btn.addEventListener('click', () => fileInput.click()));
 
 // File selection
 fileInput.addEventListener('change', async()=>{
-  const file=fileInput.files[0];
-  if(!file){uploadStatus.textContent="No file selected."; return;}
-  if(!['video/mp4','video/quicktime'].includes(file.type)){
+  selectedFile=fileInput.files[0];
+  if(!selectedFile){uploadStatus.textContent="No file selected."; return;}
+  if(!['video/mp4','video/quicktime'].includes(selectedFile.type)){
     uploadStatus.textContent="Unsupported file type! MP4/MOV only."; fileInput.value=''; return;
   }
-  if(file.size>50*1024*1024){uploadStatus.textContent="File too large! Max 50MB."; fileInput.value=''; return;}
+  if(selectedFile.size>50*1024*1024){uploadStatus.textContent="File too large! Max 50MB."; fileInput.value=''; return;}
 
   const tmpVideo=document.createElement('video');
   tmpVideo.preload='metadata';
-  tmpVideo.src=URL.createObjectURL(file);
+  tmpVideo.src=URL.createObjectURL(selectedFile);
   tmpVideo.onloadedmetadata=()=>{
     if(tmpVideo.duration<5 || tmpVideo.duration>59){
       uploadStatus.textContent="Video must be 5–59 seconds!"; fileInput.value=''; return;
     } else {
-      uploadStatus.textContent=`File ready: ${file.name} (${Math.round(tmpVideo.duration)}s)`;
+      uploadStatus.textContent=`File ready: ${selectedFile.name} (${Math.round(tmpVideo.duration)}s)`;
       demoThumb.textContent="Ready for preview or generation";
+      characterSelect.disabled=false; // activate character selection
     }
   };
 });
 
 // Preview
 btnPreview.addEventListener('click', async()=>{
-  const file=fileInput.files[0];
-  if(!file){alert("Select a file first"); return;}
+  if(!selectedFile){alert("Select a file first"); return;}
   uploadStatus.textContent="Loading FFmpeg for preview...";
   if(!ffmpeg.isLoaded()) await ffmpeg.load();
   uploadStatus.textContent="Generating preview frame...";
-  ffmpeg.FS('writeFile','input.mp4',await fetchFile(file));
+  ffmpeg.FS('writeFile','input.mp4',await fetchFile(selectedFile));
   await ffmpeg.run('-i','input.mp4','-t','2','-c','copy','preview.mp4');
   const data=ffmpeg.FS('readFile','preview.mp4');
   const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
   previewVideo.src=url; previewVideo.style.display='block';
   demoThumb.style.display='none';
+  povCanvas.style.display='none';
   uploadStatus.textContent="Preview ready!";
 });
 
-// POV Generation simulation with character
-btnGenerate.addEventListener('click',async()=>{
-  const file=fileInput.files[0];
-  if(!file){alert("Select a file first"); return;}
+// POV Generation on canvas
+btnGenerate.addEventListener('click', async()=>{
+  if(!selectedFile){alert("Select a file first"); return;}
   if(characterSelect.value==='none'){alert("Select a character first"); return;}
-  
-  uploadStatus.textContent="Generating POV video...";
-  demoThumb.style.display='flex';
-  demoThumb.textContent=`Generating AI POV for ${characterSelect.value}...`;
+
+  uploadStatus.textContent="Video is being processed...";
+  demoThumb.style.display='none';
   previewVideo.style.display='none';
-  
-  setTimeout(()=>{
-    demoThumb.textContent=`POV generated! Character: ${characterSelect.value}`;
-    uploadStatus.textContent="POV generation complete.";
-  },2000);
+  povCanvas.style.display='block';
+
+  const videoURL=URL.createObjectURL(selectedFile);
+  const video=document.createElement('video');
+  video.src=videoURL;
+  video.muted=true;
+  video.play();
+
+  // Simple simulated AI POV with motion effect
+  let offsetX=0, offsetY=0;
+  const randomMotion=()=>Math.random()*4-2;
+
+  video.addEventListener('loadeddata',()=>{
+    const drawFrame=()=>{
+      if(video.paused || video.ended) return;
+      offsetX=randomMotion(); offsetY=randomMotion();
+      ctx.clearRect(0,0,povCanvas.width,povCanvas.height);
+      ctx.drawImage(video, offsetX, offsetY, povCanvas.width, povCanvas.height);
+
+      // Color overlay per character
+      switch(characterSelect.value){
+        case 'soldier': ctx.fillStyle='rgba(0,128,0,0.2)'; break;
+        case 'athlete': ctx.fillStyle='rgba(255,255,0,0.2)'; break;
+        case 'child': ctx.fillStyle='rgba(255,192,203,0.2)'; break;
+        case 'robot': ctx.fillStyle='rgba(0,255,255,0.2)'; break;
+      }
+      ctx.fillRect(0,0,povCanvas.width,povCanvas.height);
+
+      requestAnimationFrame(drawFrame);
+    };
+    drawFrame();
+    uploadStatus.textContent=`POV generated for ${characterSelect.value}.`;
+  });
+
+  video.addEventListener('ended',()=>{
+    uploadStatus.textContent="POV playback ended.";
+  });
 });
 });
 </script>
