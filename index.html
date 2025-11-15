@@ -268,45 +268,173 @@
   </script>
 
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.2/dist/ffmpeg.min.js"></script>
+  <style>
+    /* small spinner */
+    .spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .select, .btn-small{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);font-weight:600}
+    .btn-small:hover{background:rgba(255,255,255,0.02);color:#fff}
+    .devbox{margin-top:12px;background:rgba(0,0,0,0.25);padding:10px;border-radius:8px;font-family:monospace;font-size:13px;color:#bfefff}
+  </style>
+
   <script>
-    const uploadBtn = document.getElementById('uploadButton');
-    const statusEl = document.getElementById('status');
+    (function(){
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      const ffmpeg = createFFmpeg({ log: false });
+      const fileInput = document.getElementById('fileInput');
+      const btnGenerate = document.getElementById('btnGenerate');
+      const btnPreview = document.getElementById('btnPreview');
+      const uploadStatus = document.getElementById('uploadStatus');
+      const demoThumb = document.querySelector('.demo-thumb');
+      const heroUpload = document.getElementById('heroUpload');
+      const btnUploadTop = document.getElementById('btnUploadTop');
 
-    uploadBtn.addEventListener('click', async () => {
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = 'video/*';
-      fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+      // create new UI controls
+      const controlRow = document.createElement('div'); controlRow.className='controls';
+      controlRow.innerHTML = `
+        <select id="charSelect" class="select" title="Character / POV">
+          <option value="center">Character A — Center POV</option>
+          <option value="left">Character B — Left POV</option>
+          <option value="right">Character C — Right POV</option>
+          <option value="stabilize">Character D — Stabilized POV</option>
+        </select>
+        <select id="filterSelect" class="select" title="Color Filter">
+          <option value="none">No filter</option>
+          <option value="warm">Cinematic Warm</option>
+          <option value="blue">Sci-Fi Blue</option>
+          <option value="contrast">High Contrast</option>
+          <option value="noir">Noir (B&W)</option>
+        </select>
+        <button id="demoA" class="btn-small">Demo A</button>
+        <button id="demoB" class="btn-small">Demo B</button>
+        <button id="devToggle" class="btn-small">Dev Mode</button>
+      `;
 
-        statusEl.innerText = '⏳ Processing video... (this happens locally on your device)';
+      const uploader = document.querySelector('.uploader');
+      uploader.insertBefore(controlRow, uploader.children[2]);
 
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
-        await ffmpeg.load();
+      // preview video element
+      const preview = document.createElement('video');
+      preview.controls = true; preview.style.width='100%'; preview.style.borderRadius='8px'; preview.style.marginTop='10px';
+      uploader.insertBefore(preview, uploader.children[2]);
 
-        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+      // dev box
+      const devBox = document.createElement('div'); devBox.className='devbox'; devBox.style.display='none'; devBox.id='devBox'; devBox.textContent='FFmpeg command will appear here.';
+      uploader.appendChild(devBox);
 
-        // Simple POV-like effect: crop center + slight zoom
-        await ffmpeg.run(
-          '-i', 'input.mp4',
-          '-vf', 'crop=in_w*0.6:in_h*0.6,scale=1280:720',
-          'output.mp4'
-        );
+      // bind demo buttons
+      const demoA = document.getElementById('demoA');
+      const demoB = document.getElementById('demoB');
+      const devToggle = document.getElementById('devToggle');
 
-        const data = ffmpeg.FS('readFile', 'output.mp4');
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+      demoA.addEventListener('click', ()=>loadDemo('https://sample-videos.com/video123/mp4/240/big_buck_bunny_240p_1mb.mp4'));
+      demoB.addEventListener('click', ()=>loadDemo('https://sample-videos.com/video123/mp4/240/big_buck_bunny_240p_1mb.mp4'));
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'newday_pov_demo.mp4';
-        a.click();
+      devToggle.addEventListener('click', ()=>{ devBox.style.display = devBox.style.display==='none' ? 'block' : 'none'; });
 
-        statusEl.innerText = '✅ POV video hazır!';
-      };
-      fileInput.click();
-    });
+      function loadDemo(url){
+        preview.src = url; preview.play();
+        uploadStatus.textContent = 'Loaded demo video.';
+      }
+
+      // file selection preview
+      fileInput.addEventListener('change', ()=>{
+        const f=fileInput.files[0];
+        if(!f) return; preview.src = URL.createObjectURL(f); preview.play(); uploadStatus.textContent = `Selected: ${f.name} (${Math.round(f.size/1024)} KB)`;
+      });
+
+      // helper to build filter chain
+      function buildFilterChain(pov, filter){
+        let vf = '';
+        if(pov==='center') vf = 'crop=in_w*0.6:in_h*0.6,scale=1280:720';
+        if(pov==='left') vf = 'crop=in_w*0.6:in_h*0.6:0:in_h*0.2,scale=1280:720';
+        if(pov==='right') vf = 'crop=in_w*0.6:in_h*0.6:in_w*0.4:in_h*0.2,scale=1280:720';
+        if(pov==='stabilize') vf = 'crop=in_w*0.7:in_h*0.7,deshake,scale=1280:720';
+
+        // color filters
+        if(filter==='warm') vf += ',eq=gamma_r=1.05:gamma_g=1.02:gamma_b=0.98:saturation=1.08';
+        if(filter==='blue') vf += ',eq=gamma_r=0.95:gamma_g=1.0:gamma_b=1.08:saturation=1.1';
+        if(filter==='contrast') vf += ',eq=contrast=1.3:saturation=1.05';
+        if(filter==='noir') vf += ',format=gray,eq=contrast=1.15';
+
+        return vf;
+      }
+
+      // load ffmpeg on first generation
+      let ffmpegLoaded=false;
+      async function ensureFFmpeg(){ if(ffmpegLoaded) return; uploadStatus.textContent='Loading WebAssembly ffmpeg (first-time)...'; await ffmpeg.load(); ffmpegLoaded=true; uploadStatus.textContent='ffmpeg loaded.' }
+
+      // set progress
+      ffmpeg.setProgress(p=>{
+        if(p && p.ratio){ uploadStatus.textContent = `Processing... ${Math.round(p.ratio*100)}%`; }
+      });
+
+      // generate handler
+      btnGenerate.addEventListener('click', async ()=>{
+        const pov = document.getElementById('charSelect').value;
+        const filter = document.getElementById('filterSelect').value;
+        const f = fileInput.files[0];
+        if(!f && !preview.src){ alert('Please upload a file or choose a demo.'); return; }
+
+        await ensureFFmpeg();
+
+        // fetch file (demo uses URL)
+        let inputName = 'input.mp4';
+        if(fileInput.files[0]){
+          ffmpeg.FS('writeFile', inputName, await fetchFile(fileInput.files[0]));
+        } else {
+          // fetch remote demo
+          const res = await fetch(preview.src);
+          const ab = await res.arrayBuffer();
+          ffmpeg.FS('writeFile', inputName, new Uint8Array(ab));
+        }
+
+        const vf = buildFilterChain(pov, filter);
+        const out = 'output_pov.mp4';
+        const cmd = ['-i', inputName, '-vf', vf, '-preset', 'veryfast', out];
+
+        // show dev command
+        devBox.textContent = 'ffmpeg ' + cmd.join(' ');
+
+        try{
+          uploadStatus.textContent='Processing (this runs locally in your browser)...';
+          btnGenerate.disabled=true; btnGenerate.textContent='Processing...';
+          await ffmpeg.run(...cmd);
+          const data = ffmpeg.FS('readFile', out);
+          const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+          const a = document.createElement('a'); a.href=url; a.download='newday_pov_demo.mp4'; a.click();
+          uploadStatus.textContent='✅ POV video ready — downloaded to your device.';
+        }catch(err){
+          console.error(err); uploadStatus.textContent = '❌ Processing failed (browser may be low on memory). Try a smaller file or use Chrome desktop.';
+        }finally{ btnGenerate.disabled=false; btnGenerate.textContent='Generate POV'; }
+
+      });
+
+      // preview ai button: quick simulate effect without ffmpeg (fast)
+      btnPreview.addEventListener('click', ()=>{
+        const pov = document.getElementById('charSelect').value;
+        const filter = document.getElementById('filterSelect').value;
+        if(!preview.src){ alert('Please upload or load a demo to preview.'); return; }
+        uploadStatus.textContent='Generating quick preview...';
+        // quick CSS transform preview
+        preview.style.transition='transform 0.8s ease, filter 0.6s ease';
+        if(pov==='left') preview.style.transform='scale(1.1) translateX(-8%)';
+        if(pov==='right') preview.style.transform='scale(1.1) translateX(8%)';
+        if(pov==='center') preview.style.transform='scale(1.08)';
+        if(pov==='stabilize') preview.style.transform='scale(1.03)';
+        if(filter==='warm') preview.style.filter='sepia(0.08) saturate(1.05)';
+        if(filter==='blue') preview.style.filter='hue-rotate(200deg) saturate(1.05)';
+        if(filter==='contrast') preview.style.filter='contrast(1.1)';
+        if(filter==='noir') preview.style.filter='grayscale(1) contrast(1.15)';
+        setTimeout(()=>{ preview.style.transform='none'; preview.style.filter='none'; uploadStatus.textContent='Preview complete (simulated).'; },900);
+      });
+
+      // top buttons open file dialog
+      heroUpload.addEventListener('click', ()=>fileInput.click());
+      btnUploadTop.addEventListener('click', ()=>fileInput.click());
+
+    })();
   </script>
 </body>
 </html>
