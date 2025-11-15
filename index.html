@@ -91,6 +91,7 @@ canvas{display:block;margin-top:10px;border-radius:10px;background:#000;}
 document.addEventListener('DOMContentLoaded',()=>{
 const { createFFmpeg, fetchFile }=FFmpeg;
 const ffmpeg=createFFmpeg({ log:false });
+ffmpeg.load(); // önceden yükle
 const fileInput=document.getElementById('fileInput');
 const uploadStatus=document.getElementById('uploadStatus');
 const btnGenerate=document.getElementById('btnGenerate');
@@ -134,11 +135,10 @@ fileInput.addEventListener('change', async()=>{
 // Preview
 btnPreview.addEventListener('click', async()=>{
   if(!selectedFile){alert("Select a file first"); return;}
-  uploadStatus.textContent="Loading FFmpeg for preview...";
-  if(!ffmpeg.isLoaded()) await ffmpeg.load();
-  uploadStatus.textContent="Generating preview frame...";
+  uploadStatus.textContent="Generating preview...";
+  await ffmpeg.load();
   ffmpeg.FS('writeFile','input.mp4',await fetchFile(selectedFile));
-  await ffmpeg.run('-i','input.mp4','-t','2','-c','copy','preview.mp4');
+  await ffmpeg.run('-i','input.mp4','-t','2','-c:v','libx264','-c:a','aac','preview.mp4');
   const data=ffmpeg.FS('readFile','preview.mp4');
   const url=URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
   previewVideo.src=url; previewVideo.style.display='block';
@@ -161,18 +161,16 @@ btnGenerate.addEventListener('click', async()=>{
   const video=document.createElement('video');
   video.src=videoURL;
   video.muted=true;
-  video.play();
-
-  // Simple simulated AI POV with motion effect
-  let offsetX=0, offsetY=0;
-  const randomMotion=()=>Math.random()*4-2;
 
   video.addEventListener('loadeddata',()=>{
+    video.play();
+
+    const randomMotion=()=>Math.random()*4-2;
     const drawFrame=()=>{
       if(video.paused || video.ended) return;
-      offsetX=randomMotion(); offsetY=randomMotion();
+      const offsetX=randomMotion(), offsetY=randomMotion();
       ctx.clearRect(0,0,povCanvas.width,povCanvas.height);
-      ctx.drawImage(video, offsetX, offsetY, povCanvas.width, povCanvas.height);
+      ctx.drawImage(video, 0,0, video.videoWidth, video.videoHeight, offsetX, offsetY, povCanvas.width, povCanvas.height);
 
       // Color overlay per character
       switch(characterSelect.value){
