@@ -18,7 +18,7 @@ a{color:inherit;text-decoration:none}
 .menu a{color:var(--muted);font-weight:600;padding:8px;border-radius:8px}
 .menu a:hover{color:#fff;background:rgba(255,255,255,0.02)}
 .cta{background:var(--accent);color:#071014;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer}
-.hero{max-width:1200px;margin:36px auto 18px;padding:28px 22px;display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
+.hero{max-width:1200px;margin:36px auto 18px;padding:28px 22px;display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:start}
 .hero-left h1{font-size:34px;margin:0 0 8px;color:#fff;line-height:1.03}
 .hero-left p{margin:0 0 18px;color:var(--muted);font-size:15px}
 .features{display:flex;gap:12px;flex-wrap:wrap}
@@ -30,6 +30,7 @@ a{color:inherit;text-decoration:none}
 .small{font-size:13px;color:var(--muted)}
 .demo-thumb{width:100%;height:220px;border-radius:10px;background:linear-gradient(90deg,#071018,#0f1a22);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
 .spinner{width:36px;height:36px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
+#characterSelect{margin-top:10px;background:var(--panel);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:14px;border:1px solid rgba(255,255,255,0.02);}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:980px){.hero{grid-template-columns:1fr;padding:18px}.menu{display:none}}
 </style>
@@ -53,14 +54,21 @@ a{color:inherit;text-decoration:none}
 <section id="home" class="hero">
 <div class="hero-left">
 <h1>See the world through their eyes.</h1>
-<p class="muted">Upload a short clip (5–59s) to generate a POV video using AI.</p>
+<p class="muted">Upload a short clip (5–59s) and choose a character to generate a POV video using AI.</p>
 <div class="features" style="margin-top:14px">
 <span class="chip">Short clips • 5–59s</span>
 <span class="chip">AI POV</span>
 <span class="chip">Prototype</span>
 </div>
-<div style="margin-top:18px;display:flex;gap:12px">
+<div style="margin-top:18px;display:flex;gap:12px;align-items:center">
 <a class="cta" id="heroUpload">Try Demo</a>
+<select id="characterSelect">
+<option value="none">Select Character</option>
+<option value="soldier">Soldier</option>
+<option value="athlete">Athlete</option>
+<option value="child">Child</option>
+<option value="robot">Robot</option>
+</select>
 </div>
 </div>
 <aside class="hero-right">
@@ -93,13 +101,14 @@ const heroUpload=document.getElementById('heroUpload');
 const btnUploadTop=document.getElementById('btnUploadTop');
 const demoThumb=document.querySelector('.demo-thumb');
 const previewVideo=document.getElementById('previewVideo');
+const characterSelect=document.getElementById('characterSelect');
 
-// Always trigger file input on button click
+// Open file dialog
 [heroUpload,btnUploadTop].forEach(btn=>{
   btn.addEventListener('click',()=>fileInput.click());
 });
 
-// Handle file selection
+// File selection
 fileInput.addEventListener('change',async()=>{
   const file=fileInput.files[0];
   if(!file){uploadStatus.textContent="No file selected."; return;}
@@ -121,7 +130,7 @@ fileInput.addEventListener('change',async()=>{
   };
 });
 
-// Preview first 2 seconds using FFmpeg
+// Preview
 btnPreview.addEventListener('click',async()=>{
   const file=fileInput.files[0];
   if(!file){alert("Select a file first"); return;}
@@ -137,16 +146,19 @@ btnPreview.addEventListener('click',async()=>{
   uploadStatus.textContent="Preview ready!";
 });
 
-// Simulate POV generation
+// POV Generation simulation with character
 btnGenerate.addEventListener('click',async()=>{
   const file=fileInput.files[0];
   if(!file){alert("Select a file first"); return;}
-  uploadStatus.textContent="Generating POV (simulated)...";
+  if(characterSelect.value==='none'){alert("Select a character first"); return;}
+  
+  uploadStatus.textContent="Generating POV video...";
   demoThumb.style.display='flex';
-  demoThumb.textContent="Generating AI POV...";
+  demoThumb.textContent=`Generating AI POV for ${characterSelect.value}...`;
   previewVideo.style.display='none';
+  
   setTimeout(()=>{
-    demoThumb.textContent="POV generated! (prototype)";
+    demoThumb.textContent=`POV generated! Character: ${characterSelect.value}`;
     uploadStatus.textContent="POV generation complete.";
   },2000);
 });
